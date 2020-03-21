@@ -1,0 +1,3 @@
+rootProject.name='Framework'
+include ':app'
+include ':framework'
