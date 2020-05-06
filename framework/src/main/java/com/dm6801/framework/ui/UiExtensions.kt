@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import android.view.*
+import android.widget.TextView
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -181,4 +182,14 @@ val navigationBarHeight: Int
             0
         }
     }
+
+fun TextView.setText(text: Any?) {
+    when (text) {
+        is Int -> setText(text)
+        is String -> setText(text)
+        is CharSequence -> setText(text)
+        is CharArray -> setText(text, 0, text.size)
+        else -> setText(text?.toString())
+    }
+}
 

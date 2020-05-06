@@ -10,7 +10,6 @@ import org.json.JSONObject
 import java.io.BufferedWriter
 import java.io.File
 import java.net.*
-import java.nio.CharBuffer
 import java.nio.charset.StandardCharsets
 
 @Suppress(
@@ -328,25 +327,26 @@ class Http {
         return URL(if (query.isNullOrBlank()) this else "$this?$query")
     }
 
-    private fun Map<String, Any?>.toQueryString(): String? {
-        return if (isNotEmpty())
-            this.entries.joinToString("&") { entry ->
-                val value = when (val value = entry.value) {
-                    is Array<*> -> value.toQueryString()
-                    is Iterable<*> -> value.toQueryString()
-                    else -> value.toString().urlEncode()
-                }
-                "${entry.key.urlEncode()}=$value"
-            }
-        else null
+    private inline fun <reified T> T.toQueryString(key: String): String? {
+        return when (this) {
+            is Array<*> -> toQueryString(key)
+            is Iterable<*> -> toQueryString(key)
+            is Map<*, *> -> toQueryString()
+            else -> "$key=${toString().urlEncode()}"
+        }
     }
 
-    private fun Array<*>.toQueryString(): String {
-        return "[${joinToString(",") { it.toString().urlEncode() }}]"
+    private fun Map<*, *>.toQueryString(): String? {
+        if (isEmpty()) return null
+        return mapNotNull { it.value.toQueryString(it.key.toString()) }.joinToString("&")
     }
 
-    private fun Iterable<*>.toQueryString(): String {
-        return "[${joinToString(",") { it.toString().urlEncode() }}]"
+    private fun Array<*>.toQueryString(key: String): String? {
+        return asIterable().toQueryString(key)
+    }
+
+    private fun Iterable<*>.toQueryString(key: String): String? {
+        return mapIndexed { i, value -> value.toQueryString("$key[$i]") }.joinToString("&")
     }
 
     private suspend fun showProgressBar(isBlocking: Boolean) {
@@ -373,10 +373,9 @@ class Http {
     ) {
         if (log)
             Log(
-                type.justify(10) + direction.justify(10) + url.justify(50) + (headers?.toString()
-                    ?.justify(
-                        50
-                    ) ?: "") + (args?.toString()?.justify(50) ?: "")
+                type.justify(10) + direction.justify(10) + url.justify(50) +
+                        (headers?.toQueryString()?.justify(50) ?: "") +
+                        (args?.toQueryString()?.justify(50) ?: "")
             )
     }
 

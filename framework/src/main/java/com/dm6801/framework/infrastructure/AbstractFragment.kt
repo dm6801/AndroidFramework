@@ -20,7 +20,7 @@ abstract class AbstractFragment : Fragment() {
     val isLastFragment: Boolean get() = activity?.isLastFragment ?: false
 
     open class Comp(_class: Class<*>? = null) {
-        private val clazz: Class<*>? = _class ?: this::class.java.enclosingClass
+        protected val clazz: Class<*>? = _class ?: this::class.java.enclosingClass
 
         open fun open(
             vararg args: Pair<String, Any?>,
