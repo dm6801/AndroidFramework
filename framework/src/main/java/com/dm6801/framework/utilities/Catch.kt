@@ -17,3 +17,12 @@ fun <R> catch(silent: Boolean = false, action: () -> R): R? {
         null
     }
 }
+
+suspend fun <R> suspendCatch(silent: Boolean = false, action: suspend () -> R): R? {
+    return try {
+        action()
+    } catch (t: Throwable) {
+        if (!silent) t.printStackTrace()
+        null
+    }
+}

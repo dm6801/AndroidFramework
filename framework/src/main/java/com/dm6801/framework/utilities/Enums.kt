@@ -1,4 +1,8 @@
 package com.dm6801.framework.utilities
 
-inline fun <reified T : Enum<T>> enumValueOf(name: String): T? =
-    catch { kotlin.enumValueOf<T>(name) }
+import android.annotation.SuppressLint
+
+@SuppressLint("DefaultLocale")
+inline fun <reified E : Enum<E>> enumValue(name: String): E? = catch {
+    enumValues<E>().find { it.name.toLowerCase() == name.toLowerCase() }
+}

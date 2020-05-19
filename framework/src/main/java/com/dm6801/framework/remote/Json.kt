@@ -1,6 +1,7 @@
 package com.dm6801.framework.remote
 
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 fun JSONObject.toMap(): Map<String, Any?> {
@@ -18,4 +19,19 @@ fun JSONObject.toMap(): Map<String, Any?> {
 
 fun JSONArray.toList(): List<Any?> {
     return (0 until length()).map { get(it) }
+}
+
+@Suppress("UNCHECKED_CAST")
+@Throws(JSONException::class)
+fun <IN, OUT> JSONObject.getList(
+    name: String,
+    transform: IN.() -> OUT
+): List<OUT> {
+    return optJSONArray(name)?.run {
+        (0 until length()).asSequence().map { (get(it) as IN).transform() }.toList()
+    } ?: emptyList()
+}
+
+fun JSONObject.string(key: String): String? {
+    return if (isNull(key)) null else optString(key)
 }
