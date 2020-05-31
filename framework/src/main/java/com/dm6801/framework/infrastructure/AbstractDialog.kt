@@ -98,43 +98,54 @@ abstract class AbstractDialog :
 
     protected var view: View? by weakRef(null)
     protected var arguments: Map<String, Any?> = mutableMapOf()
-    protected abstract val layoutRes: Int
+    protected abstract val layout: Int
     protected open val isCancelable: Boolean = true
-    protected open val widthFactor: Float = 0.8f
-    protected open val heightFactor: Float = 0.6f
+    protected open val widthFactor: Float? = null
+    protected open val heightFactor: Float? = null
+    protected open val gravity: Int = Gravity.CENTER
     private var wasCanceled: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments.takeIf { it.isNotEmpty() }?.let(::onArguments)
-        init()
+        inflateView()
     }
 
     open fun onArguments(arguments: Map<String, Any?>) {
         Log("onArguments(): $arguments")
     }
 
-    private fun init() {
-        setWindow()
-        inflateView()
-    }
-
     private fun inflateView() {
-        view = LayoutInflater.from(context).inflate(layoutRes, null, false)
-        view?.let {
-            setContentView(
-                it, ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
+        if (widthFactor == null || heightFactor == null) {
+            view = LayoutInflater.from(context)
+                .inflate(layout, window?.decorView?.findViewById(android.R.id.content), true)
+        } else {
+            window?.attributes?.apply {
+                width = WindowManager.LayoutParams.MATCH_PARENT
+                height = WindowManager.LayoutParams.MATCH_PARENT
+                gravity = this@AbstractDialog.gravity
+            }
+            window?.setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
             )
+            window?.setBackgroundDrawableResource(R.color.transparent)
+            view = LayoutInflater.from(context).inflate(layout, null, false)?.also {
+                setContentView(
+                    it, ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                )
+            }
             setDimensions()
-            onViewCreated(it)
-        } ?: run {
-            dismiss()
-            clearInstance()
-            return
         }
+        view?.let(::onViewCreated)
+            ?: run {
+                dismiss()
+                clearInstance()
+                return
+            }
         setCancelable(isCancelable)
         setCanceledOnTouchOutside(isCancelable)
         setOnDismissListener {
@@ -149,25 +160,14 @@ abstract class AbstractDialog :
     }
 
     private fun setDimensions() {
-        val screenSize = getScreenSize()
-        val width = screenSize.first
-        val height = screenSize.second
-        if (width == 0 || height == 0) return
-
+        val widthFactor = widthFactor ?: return
+        val heightFactor = heightFactor ?: return
+        val (screenWidth, screenHeight) = getScreenSize()
+        if (screenWidth == 0 || screenHeight == 0) return
         view?.layoutParams = FrameLayout.LayoutParams(
-            (width * widthFactor).toInt(),
-            (height * heightFactor).toInt()
-        ).apply {
-            gravity = Gravity.CENTER
-        }
-    }
-
-    private fun setWindow() {
-        window?.attributes?.apply {
-            width = WindowManager.LayoutParams.MATCH_PARENT
-            height = WindowManager.LayoutParams.MATCH_PARENT
-        }
-        window?.setBackgroundDrawableResource(R.color.transparent)
+            (screenWidth * widthFactor).toInt(),
+            (screenHeight * heightFactor).toInt()
+        )
     }
 
     open fun onResume() {}
