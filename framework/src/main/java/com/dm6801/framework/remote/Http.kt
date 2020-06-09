@@ -214,6 +214,7 @@ class Http {
             connection.addRequestProperty("Connection", "Keep-Alive")
             connection.addRequestProperty("Cache-Control", "no-cache")
             connection.addRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            headers?.forEach(connection::addHeader)
             chunked?.let(connection::setChunkedStreamingMode)
             connection.useCaches = false
             connection.doInput = true

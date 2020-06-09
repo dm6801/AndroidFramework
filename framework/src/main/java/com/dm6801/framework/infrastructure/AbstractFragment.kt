@@ -54,6 +54,10 @@ abstract class AbstractFragment : Fragment() {
         fun navigateBack(tag: String? = null, inclusive: Boolean = false) {
             foregroundActivity?.navigateBack(tag, inclusive)
         }
+
+        fun backPress() {
+            foregroundActivity?.onBackPressed()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,7 +75,6 @@ abstract class AbstractFragment : Fragment() {
         return inflater.inflate(layout, container, false)
             .apply { clickable() }
     }
-
 
     override fun onResume() {
         super.onResume()

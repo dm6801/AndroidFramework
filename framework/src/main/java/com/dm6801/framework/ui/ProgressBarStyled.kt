@@ -28,7 +28,10 @@ open class ProgressBarStyled @JvmOverloads constructor(
             }
             root?.addView(container)
             container?.apply {
-                layoutParams = layoutParams.apply {
+                layoutParams = (layoutParams ?: ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )).apply {
                     width = ViewGroup.LayoutParams.MATCH_PARENT
                     height = ViewGroup.LayoutParams.MATCH_PARENT
                 }

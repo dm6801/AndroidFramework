@@ -216,6 +216,26 @@ abstract class AbstractActivity : AppCompatActivity() {
         }
     }
 
+    fun popBackStack() {
+        try {
+            if (!supportFragmentManager.popBackStackImmediate(
+                    null,
+                    FragmentManager.POP_BACK_STACK_INCLUSIVE
+                )
+            ) supportFragmentManager.popBackStack(
+                null,
+                FragmentManager.POP_BACK_STACK_INCLUSIVE
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            try {
+                supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun open(
         fragment: Fragment,
         arguments: Map<String, Any?>? = null,

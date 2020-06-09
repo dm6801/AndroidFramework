@@ -43,33 +43,34 @@ class HttpTests : Tests() {
     @Test
     fun `download file`() = runTest {
         Http.instance.download(
-                url = "http://httpbin.org/image/png",
-                arguments = mapOf("argument1" to arrayOf(1, 2), "argument2" to "string")
-            )
+            url = "http://httpbin.org/image/png",
+            arguments = mapOf("argument1" to arrayOf(1, 2), "argument2" to "string")
+        )
             .await()
     }
 
     @Test
     fun `multipart byte array`() = runTest {
         Http.instance.multipart(
-                url = "http://httpbin.org/anything",
-                arguments = mapOf(
-                    "argument1" to "string",
-                    "file1" to "abc".toByteArray()
-                )
-            )
+            url = "http://httpbin.org/anything",
+            arguments = mapOf(
+                "argument1" to "string",
+                "file1" to "abc".toByteArray()
+            ),
+            headers = mapOf("a" to "b")
+        )
             .await()
     }
 
     @Test
     fun `multipart byte array with filename`() = runTest {
         Http.instance.multipart(
-                url = "http://httpbin.org/anything",
-                arguments = mapOf(
-                    "argument1" to "string",
-                    "file1" to ("abc".toByteArray() to "file_1.txt")
-                )
+            url = "http://httpbin.org/anything",
+            arguments = mapOf(
+                "argument1" to "string",
+                "file1" to ("abc".toByteArray() to "file_1.txt")
             )
+        )
             .await()
     }
 
