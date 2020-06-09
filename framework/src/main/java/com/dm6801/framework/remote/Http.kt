@@ -7,8 +7,7 @@ import com.dm6801.framework.utilities.*
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedWriter
-import java.io.File
+import java.io.*
 import java.net.*
 import java.nio.charset.StandardCharsets
 
@@ -214,12 +213,18 @@ class Http {
             connection.addRequestProperty("Connection", "Keep-Alive")
             connection.addRequestProperty("Cache-Control", "no-cache")
             connection.addRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            val body = createMultipartBody(arguments, boundary)
+            val bytearray = body.toByteArray()
+            connection.addRequestProperty("Content-Length", bytearray.size.toString())
+            log(tag, "Content-Length: ${bytearray.size}\n${bytearray.toString(Charsets.UTF_8)}")
             headers?.forEach(connection::addHeader)
             chunked?.let(connection::setChunkedStreamingMode)
             connection.useCaches = false
             connection.doInput = true
             connection.doOutput = true
-            connection.addParts(arguments, boundary)
+            connection.outputStream.write(bytearray)
+            connection.outputStream.flush()
+            connection.outputStream.close()
             connection.responseOkOrThrow(tag, url)
             connection.inputStream?.bufferedReader()?.use { reader ->
                 reader.readText()
@@ -229,74 +234,61 @@ class Http {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun URLConnection.addParts(parts: Map<String, Any?>, boundary: String) = catch {
-        if (parts.isEmpty()) {
-            getOutputStream().close()
-            return@catch
-        }
-        getOutputStream().bufferedWriter().use { writer ->
-            parts.forEach { (field, value) ->
-                when (value) {
-                    is String -> writer.addFormField(field, value, boundary)
-                    is File -> writer.addFile(field, value, boundary)
-                    is ByteArray -> writer.addFile(field, value.toTempFile(), boundary)
-                    else ->
-                        (value as? Pair<ByteArray, String>)?.let { (byteArray, filename) ->
-                            writer.addFile(
-                                field,
-                                byteArray.toTempFile(filename),
-                                boundary,
-                                filename,
-                                guessMimeType(filename)
-                            )
-                        } ?: run {
-                            writer.addFormField(field, value.toString(), boundary)
-                        }
-                }
+    private fun createMultipartBody(
+        parts: Map<String, Any?>,
+        boundary: String
+    ): ByteArrayOutputStream {
+        val output = ByteArrayOutputStream()
+        parts.forEach { (field, value) ->
+            when (value) {
+                is String -> output.addFormField(field, value, boundary)
+                is File -> output.addFile(field, value, boundary)
+                is ByteArray -> output.addFile(field, value.toTempFile(), boundary)
+                else ->
+                    (value as? Pair<ByteArray, String>)?.let { (byteArray, filename) ->
+                        output.addFile(
+                            field,
+                            byteArray.toTempFile(filename),
+                            boundary,
+                            filename,
+                            guessMimeType(filename)
+                        )
+                    } ?: run {
+                        output.addFormField(field, value.toString(), boundary)
+                    }
             }
-            writer.append("--$boundary--\r\n")
-            writer.flush()
         }
+        output.write("--$boundary--\r\n".toByteArray())
+        output.flush()
+        return output
     }
 
-    private fun BufferedWriter.addFormField(field: String, value: Any, boundary: String) {
-        append(
-            "--$boundary\r\n" +
+    private fun OutputStream.addFormField(field: String, value: Any, boundary: String) {
+        write(
+            ("--$boundary\r\n" +
                     "Content-Disposition: form-data; name=\"$field\"\r\n" +
                     "\r\n" +
-                    "$value\r\n"
+                    "$value\r\n").toByteArray()
         )
         flush()
     }
 
-    private fun BufferedWriter.addFile(
+    private fun OutputStream.addFile(
         field: String,
         file: File,
         boundary: String,
         fileName: String? = null,
         mimeType: String? = null
     ) = catch {
-        append(
-            "--$boundary\r\n" +
+        write(
+            ("--$boundary\r\n" +
                     "Content-Disposition: form-data; name=\"$field\"; filename=\"${fileName ?: file.name}\"\r\n" +
                     "Content-Type: ${mimeType ?: file.mimeType ?: "text/plain"}\r\n" +
-                    "\r\n"
+                    "\r\n").toByteArray()
         )
+        write(file.readBytes())
+        write("\r\n".toByteArray())
         flush()
-        file.useLines { lines ->
-            val iterator = lines.iterator()
-            while (true) {
-                val line = iterator.next()
-                if (iterator.hasNext()) {
-                    append("$line\n")
-                    flush()
-                } else {
-                    append("$line\r\n")
-                    flush()
-                    break
-                }
-            }
-        }
     }
 
     @Throws(Exception::class)

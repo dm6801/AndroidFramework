@@ -45,7 +45,7 @@ fun log(
         _log(tag, string, level, toast)
     else
         string.chunkedSequence(MAX_LOG_LENGTH)
-            .forEach { _log(tag, it.substring(0, it.length.coerceAtMost(100)), level, toast) }
+            .forEach { _log(tag, it, level, toast) }
 }
 
 private fun _log(
