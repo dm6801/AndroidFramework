@@ -67,7 +67,8 @@ abstract class AbstractActivity : AppCompatActivity() {
     abstract val layout: Int
     val Fragment.TAG get() = javaClass.simpleName
     open val fragmentContainer: Int = -1
-    private val fragment: Fragment? get() = supportFragmentManager.fragments.lastOrNull()
+    private val fragment: Fragment? get() = getFragments().lastOrNull()
+    protected open val onlyTypedFragments = true
 
     val contentView: ViewGroup? get() = findViewById(android.R.id.content)
     open val landingClass: Class<*>? = null
@@ -182,15 +183,24 @@ abstract class AbstractActivity : AppCompatActivity() {
     val backStackNames: List<String> get() = backStack.mapNotNull { it.name }
     val backStackArguments: MutableMap<String, Map<String, Any?>> = mutableMapOf()
     val isLastFragment: Boolean
-        get() = supportFragmentManager.backStackEntryCount <= 1 //|| supportFragmentManager.fragments.size == 1
-    var wasPopped: Boolean = false
+        get() = supportFragmentManager.backStackEntryCount <= 1 //|| getFragments().size == 1
+
+    fun getFragments(): List<Fragment> {
+        return if (onlyTypedFragments) supportFragmentManager.fragments.filterIsInstance<AbstractFragment>()
+        else supportFragmentManager.fragments
+    }
 
     private fun setBackStackListener() {
         supportFragmentManager.addOnBackStackChangedListener {
-            this@AbstractActivity.Log("fragmentManager: OnBackStackChanged(): stack=${supportFragmentManager.fragments.map { it.TAG }}")
-            if (wasPopped) {
-                wasPopped = false
-                (fragment as? AbstractFragment)?.onResumeFromBackStack()
+            this@AbstractActivity.Log("fragmentManager: OnBackStackChanged(): stack=${getFragments().map { it.TAG }}")
+            val foregroundFragment = foregroundFragment
+            getFragments().forEach { fragment ->
+                if (fragment !is AbstractFragment) return@forEach
+                if (fragment == foregroundFragment) {
+                    backStackArguments.remove(fragment.TAG)?.let(fragment::onArguments)
+                    fragment.onForeground()
+                }
+                fragment.onBackground()
             }
         }
     }
@@ -198,10 +208,10 @@ abstract class AbstractActivity : AppCompatActivity() {
     private fun openLanding() {
         landingClass
             ?.takeIf { (AbstractFragment::class.java.isAssignableFrom(it)) }
-            ?.let { open(it.newInstance() as AbstractFragment) }
+            ?.let { open(it.newInstance() as Fragment) }
     }
 
-    fun popBackStack(tag: String? = null, flag: Int = 0) {
+    fun popBackStack(flag: Int, tag: String? = null) {
         try {
             if (!supportFragmentManager.popBackStackImmediate(tag, flag)) {
                 supportFragmentManager.popBackStack(tag, flag)
@@ -217,23 +227,7 @@ abstract class AbstractActivity : AppCompatActivity() {
     }
 
     fun popBackStack() {
-        try {
-            if (!supportFragmentManager.popBackStackImmediate(
-                    null,
-                    FragmentManager.POP_BACK_STACK_INCLUSIVE
-                )
-            ) supportFragmentManager.popBackStack(
-                null,
-                FragmentManager.POP_BACK_STACK_INCLUSIVE
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            try {
-                supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        popBackStack(0, null)
     }
 
     fun open(
@@ -245,7 +239,7 @@ abstract class AbstractActivity : AppCompatActivity() {
     ) = catch {
         when {
             backStackNames.contains(fragment.TAG) -> {
-                popBackStack(fragment.TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                popBackStack(FragmentManager.POP_BACK_STACK_INCLUSIVE, fragment.TAG)
                 add(
                     fragment,
                     arguments,
@@ -334,7 +328,7 @@ abstract class AbstractActivity : AppCompatActivity() {
             if (addToBackStack) addToBackStack(fragment.TAG)
             else delay(1_000) {
                 this@AbstractActivity.Log(
-                    "fragmentManager: stack=${supportFragmentManager.fragments.map { it.TAG }}"
+                    "fragmentManager: stack=${getFragments().map { it.TAG }}"
                 )
             }
             catch { action(this, fragment) }
@@ -343,7 +337,11 @@ abstract class AbstractActivity : AppCompatActivity() {
         if (hideProgressBar) hideProgressBar()
     }
 
-    open fun navigateBack(tag: String? = null, inclusive: Boolean = false): Unit = catch {
+    open fun navigateBack(
+        vararg args: Pair<String, Any?>,
+        tag: String? = null,
+        inclusive: Boolean = false
+    ): Unit = catch {
         Log("fragmentManager: navigateBack()")
         when {
             tag != null -> {
@@ -352,11 +350,11 @@ abstract class AbstractActivity : AppCompatActivity() {
                     index == -1 -> return@catch
                     index == 0 && inclusive -> finish()
                     else -> {
-                        wasPopped = true
+                        takeArguments(index, args.toMap())
                         Log("fragmentManager: popBackStack($tag, ${if (inclusive) "POP_BACK_STACK_INCLUSIVE" else "0"})")
-                        supportFragmentManager.popBackStack(
-                            tag,
-                            if (inclusive) FragmentManager.POP_BACK_STACK_INCLUSIVE else 0
+                        popBackStack(
+                            if (inclusive) FragmentManager.POP_BACK_STACK_INCLUSIVE else 0,
+                            tag
                         )
                         hideKeyboard()
                         hideProgressBar()
@@ -365,7 +363,7 @@ abstract class AbstractActivity : AppCompatActivity() {
             }
             isLastFragment -> finish()
             else -> {
-                wasPopped = true
+                takeArguments(backStackNames.lastIndex, args.toMap())
                 Log("fragmentManager: popBackStack()")
                 supportFragmentManager.popBackStack()
                 hideKeyboard()
@@ -374,8 +372,25 @@ abstract class AbstractActivity : AppCompatActivity() {
         }
     } ?: Unit
 
+    private fun takeArguments(index: Int, arguments: Map<String, Any?>?) {
+        (arguments?.takeIf { it.isNotEmpty() }
+            ?.toMap() as? Map<String, Any?>)?.let { map ->
+            backStackNames.getOrNull(index - 1)?.let { previousTag ->
+                backStackArguments[previousTag] = map
+            }
+        }
+    }
+
+    inline fun <reified T : AbstractFragment> navigateBack(
+        vararg args: Pair<String, Any?>,
+        inclusive: Boolean = false,
+        a: Boolean = false
+    ) {
+        navigateBack(*args, tag = T::class.java.simpleName, inclusive = inclusive)
+    }
+
     fun clearBackStack() {
-        popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        popBackStack(FragmentManager.POP_BACK_STACK_INCLUSIVE, null)
     }
 
     override fun onBackPressed() {

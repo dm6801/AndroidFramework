@@ -34,7 +34,7 @@ abstract class AbstractFragment : Fragment() {
                 val fragment = clazz.newInstance() as AbstractFragment
                 activity.open(
                     fragment,
-                    args.toMap(),
+                    args.takeIf { it.isNotEmpty() }?.toMap(),
                     replace,
                     addToBackStack,
                     hideProgressBar
@@ -47,12 +47,24 @@ abstract class AbstractFragment : Fragment() {
         fun close() {
             if (clazz == foregroundFragment?.javaClass)
                 foregroundActivity?.popBackStack(
-                    foregroundFragment?.tag, FragmentManager.POP_BACK_STACK_INCLUSIVE
+                    FragmentManager.POP_BACK_STACK_INCLUSIVE, foregroundFragment?.tag
                 )
         }
 
-        fun navigateBack(tag: String? = null, inclusive: Boolean = false) {
-            foregroundActivity?.navigateBack(tag, inclusive)
+        fun navigateBack(
+            vararg args: Pair<String, Any?>,
+            tag: String? = null,
+            inclusive: Boolean = false
+        ) {
+            foregroundActivity?.navigateBack(*args, tag = tag, inclusive = inclusive)
+        }
+
+        inline fun <reified T : AbstractFragment> navigateBack(
+            vararg args: Pair<String, Any?>,
+            inclusive: Boolean = false,
+            a: Boolean = false
+        ) {
+            navigateBack(*args, tag = T::class.java.simpleName, inclusive = inclusive)
         }
 
         fun backPress() {
@@ -80,7 +92,9 @@ abstract class AbstractFragment : Fragment() {
         super.onResume()
     }
 
-    open fun onResumeFromBackStack() {}
+    open fun onForeground() {}
+
+    open fun onBackground() {}
 
     open fun onBackPressed(): Boolean {
         return false
