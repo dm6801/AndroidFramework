@@ -1,6 +1,7 @@
 package com.dm6801.framework.infrastructure
 
 import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
 import android.view.*
 import android.widget.FrameLayout
@@ -12,8 +13,16 @@ import com.dm6801.framework.utilities.Log
 import com.dm6801.framework.utilities.weakRef
 import java.lang.ref.WeakReference
 
-abstract class AbstractDialog :
-    Dialog(AbstractApplication.activity ?: AbstractApplication.instance) {
+abstract class AbstractDialog : Dialog {
+
+    constructor(
+        context: Context = AbstractApplication.activity ?: AbstractApplication.instance
+    ) : super(context)
+
+    constructor(
+        context: Context = AbstractApplication.activity ?: AbstractApplication.instance,
+        themeResId: Int
+    ) : super(context, themeResId)
 
     companion object {
         val instances: Map<String, WeakReference<AbstractDialog?>?> = mutableMapOf()
@@ -125,10 +134,6 @@ abstract class AbstractDialog :
                 height = WindowManager.LayoutParams.MATCH_PARENT
                 gravity = this@AbstractDialog.gravity
             }
-            window?.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
             window?.setBackgroundDrawableResource(R.color.transparent)
             view = LayoutInflater.from(context).inflate(layout, null, false)?.also {
                 setContentView(

@@ -7,6 +7,7 @@ import android.content.res.Resources
 import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.*
 import android.widget.TextView
@@ -44,9 +45,9 @@ val windowManager: WindowManager? get() = app.getSystemService()
 
 fun getScreenSize(): Pair<Int, Int> {
     val windowManager = windowManager ?: return 0 to 0
-    val point = Point()
-    windowManager.defaultDisplay.getSize(point)
-    return point.x to point.y
+    val dm = DisplayMetrics()
+    windowManager.defaultDisplay.getRealMetrics(dm)
+    return dm.widthPixels to dm.heightPixels
 }
 
 val Int.dpToPx: Int
