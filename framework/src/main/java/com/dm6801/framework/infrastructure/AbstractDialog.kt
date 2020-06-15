@@ -7,6 +7,7 @@ import android.view.*
 import android.widget.FrameLayout
 import com.dm6801.framework.*
 import com.dm6801.framework.ui.getScreenSize
+import com.dm6801.framework.ui.hideKeyboard
 import com.dm6801.framework.ui.isVisibleOnScreen
 import com.dm6801.framework.ui.wasClicked
 import com.dm6801.framework.utilities.Log
@@ -112,6 +113,7 @@ abstract class AbstractDialog : Dialog {
     protected open val widthFactor: Float? = null
     protected open val heightFactor: Float? = null
     protected open val gravity: Int = Gravity.CENTER
+    protected open val isBackgroundDim: Boolean = false
     private var wasCanceled: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -134,7 +136,7 @@ abstract class AbstractDialog : Dialog {
                 height = WindowManager.LayoutParams.MATCH_PARENT
                 gravity = this@AbstractDialog.gravity
             }
-            window?.setBackgroundDrawableResource(R.color.transparent)
+            window?.setBackgroundDrawableResource(if (isBackgroundDim) R.color.dim else R.color.transparent)
             view = LayoutInflater.from(context).inflate(layout, null, false)?.also {
                 setContentView(
                     it, ViewGroup.LayoutParams(
@@ -144,6 +146,7 @@ abstract class AbstractDialog : Dialog {
                 )
             }
             setDimensions()
+            (view?.layoutParams as? FrameLayout.LayoutParams)?.gravity = gravity
         }
         view?.let(::onViewCreated)
             ?: run {
@@ -198,6 +201,16 @@ abstract class AbstractDialog : Dialog {
     }
 
     open fun onViewCreated(view: View) {}
+
+    override fun cancel() {
+        currentFocus?.let(::hideKeyboard)
+        super.cancel()
+    }
+
+    override fun dismiss() {
+        currentFocus?.let(::hideKeyboard)
+        super.dismiss()
+    }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.actionMasked == MotionEvent.ACTION_UP) {
