@@ -13,13 +13,16 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
 import com.dm6801.framework.*
-import com.dm6801.framework.ui.ProgressBarStyled
+import com.dm6801.framework.ui.ProgressBar
+import com.dm6801.framework.ui.ProgressBarLayout
 import com.dm6801.framework.ui.hideKeyboard
 import com.dm6801.framework.utilities.Log
 import com.dm6801.framework.utilities.catch
 import com.dm6801.framework.utilities.delay
 import com.dm6801.framework.utilities.main
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 fun showProgressBar(isContent: Boolean = false, isBlocking: Boolean = true) {
@@ -401,27 +404,28 @@ abstract class AbstractActivity : AppCompatActivity() {
 
     //region progress bar
     var isProgressBarAllowed: Boolean = true
-    private var progressBar: ProgressBarStyled? = null
+    private var progressBar: ProgressBar? = null
 
-    fun refreshProgressBar() = main {
+    fun refreshProgressBar() = lifecycleScope.launch {
         progressBar?.show()
     }
 
-    fun showProgressBar(isContent: Boolean = false, isBlocking: Boolean = true) = main {
-        if (!isProgressBarAllowed) return@main
-        if (progressBar != null || progressBar?.isContentLoading != isContent || progressBar?.isBlocking != isBlocking) {
-            progressBar?.hide()
-            progressBar = null
+    fun showProgressBar(isContent: Boolean = false, isBlocking: Boolean = true) =
+        lifecycleScope.launch {
+            if (!isProgressBarAllowed) return@launch
+            if (progressBar != null) {
+                progressBar?.hide()
+                progressBar = null
+            }
+            progressBar = createProgressBar(isContent, isBlocking)
+            progressBar?.show()
         }
-        progressBar = createProgressBar(isContent, isBlocking)
-        progressBar?.show()
-    }
 
     protected open fun createProgressBar(
         isContent: Boolean,
         isBlocking: Boolean
-    ): ProgressBarStyled {
-        return ProgressBarStyled(
+    ): ProgressBar {
+        return ProgressBarLayout(
             this,
             root = contentView,
             isContentLoading = isContent,
@@ -429,7 +433,7 @@ abstract class AbstractActivity : AppCompatActivity() {
         )
     }
 
-    fun hideProgressBar() = main {
+    fun hideProgressBar() = lifecycleScope.launch {
         progressBar?.hide()
         progressBar = null
     }

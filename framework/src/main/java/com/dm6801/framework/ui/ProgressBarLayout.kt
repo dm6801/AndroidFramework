@@ -9,23 +9,29 @@ import android.widget.ProgressBar
 import androidx.core.widget.ContentLoadingProgressBar
 import com.dm6801.framework.R
 
-open class ProgressBarStyled @JvmOverloads constructor(
+open class ProgressBarLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
     root: ViewGroup? = null,
     val isContentLoading: Boolean = false,
     val isBlocking: Boolean = true
-) : FrameLayout(context, attrs, defStyleAttr) {
+) : FrameLayout(context, attrs, defStyleAttr), com.dm6801.framework.ui.ProgressBar {
+
+    private val container: ViewGroup?
+        get() = getChildAt(0) as? ViewGroup
+
+    private val progressBar: ProgressBar?
+        get() = container?.getChildAt(0) as? ProgressBar
 
     init {
         try {
             val layout =
-                if (isContentLoading) R.layout.progress_bar_content_loading else R.layout.progress_bar
+                if (isContentLoading) R.layout.progress_bar_content_loading
+                else R.layout.progress_bar
             val container = inflate(context, layout, this) as? ViewGroup
-            (container?.getChildAt(0) as? ProgressBar)?.apply {
-                setColors(this)
-            }
+            (container?.getChildAt(0) as? ProgressBar)
+                ?.apply { setColors(this) }
             root?.addView(container)
             container?.apply {
                 layoutParams = (layoutParams ?: ViewGroup.LayoutParams(
@@ -52,17 +58,11 @@ open class ProgressBarStyled @JvmOverloads constructor(
             foregroundTintList = Colors.accentStateList
     }
 
-    private val container: ViewGroup?
-        get() = getChildAt(0) as? ViewGroup
-
-    private val progressBar: ProgressBar?
-        get() = container?.getChildAt(0) as? ProgressBar
-
-    fun show() {
+    override fun show() {
         (progressBar as? ContentLoadingProgressBar)?.show()
     }
 
-    fun hide() {
+    override fun hide() {
         (progressBar as? ContentLoadingProgressBar)?.hide()
         (parent as? ViewGroup)?.removeView(this)
     }
