@@ -2,7 +2,9 @@
 
 package com.dm6801.framework.infrastructure
 
+import android.graphics.Rect
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.EditText
@@ -13,15 +15,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import androidx.fragment.app.commit
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.dm6801.framework.*
-import com.dm6801.framework.ui.ProgressBar
-import com.dm6801.framework.ui.ProgressBarLayout
-import com.dm6801.framework.ui.hideKeyboard
+import com.dm6801.framework.ui.*
 import com.dm6801.framework.utilities.Log
 import com.dm6801.framework.utilities.catch
 import com.dm6801.framework.utilities.delay
-import com.dm6801.framework.utilities.main
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -80,6 +81,7 @@ abstract class AbstractActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(layout)
         addGlobalFocusChangeListener()
+        setKeyboardListener()
         setBackStackListener()
         openLanding()
     }
@@ -436,6 +438,39 @@ abstract class AbstractActivity : AppCompatActivity() {
     fun hideProgressBar() = lifecycleScope.launch {
         progressBar?.hide()
         progressBar = null
+    }
+    //endregion
+
+    //region keyboard
+    var isKeyboardVisible: Boolean = false; private set
+    val keyboardVisibility: LiveData<Boolean> = MutableLiveData()
+
+    protected open fun onSoftKeyboard(isVisible: Boolean) {
+        foregroundFragment?.onSoftKeyboard(isVisible)
+        AbstractDialog.instances.values.forEach { it?.get()?.onSoftKeyboard(isVisible) }
+    }
+
+    private fun setKeyboardListener() {
+        contentView?.apply {
+            viewTreeObserver?.addOnGlobalLayoutListener {
+                val keyboardHeight = calculateKeyboardHeight() ?: return@addOnGlobalLayoutListener
+                val isKeyboardVisible = keyboardHeight >= KeyboardManager.estimatedHeight
+                if (this@AbstractActivity.isKeyboardVisible != isKeyboardVisible) {
+                    this@AbstractActivity.isKeyboardVisible = isKeyboardVisible
+                    keyboardVisibility.set(isKeyboardVisible)
+                    onSoftKeyboard(isKeyboardVisible)
+                }
+            }
+        }
+    }
+
+    private fun calculateKeyboardHeight(): Int? {
+        val visibleRect = Rect()
+        contentView?.getWindowVisibleDisplayFrame(visibleRect) ?: return null
+        val statusBarHeight = visibleRect.top
+        val screenSize = DisplayMetrics()
+        windowManager.defaultDisplay.getRealMetrics(screenSize)
+        return screenSize.heightPixels - visibleRect.height() - statusBarHeight
     }
     //endregion
 

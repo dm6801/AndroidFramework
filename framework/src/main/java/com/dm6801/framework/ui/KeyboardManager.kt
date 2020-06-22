@@ -10,6 +10,7 @@ object KeyboardManager {
 
     private val imm: InputMethodManager? get() = AbstractApplication.instance.getSystemService()
     private val activity: AppCompatActivity? get() = AbstractApplication.activity
+    val estimatedHeight get() = 148.dpToPx
 
     fun show(view: View? = null) {
         (view ?: activity?.currentFocus)?.let {
