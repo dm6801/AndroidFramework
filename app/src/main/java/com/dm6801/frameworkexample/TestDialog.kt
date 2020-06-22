@@ -9,9 +9,9 @@ class TestDialog : AbstractDialog() {
 
     override val layout = R.layout.dialog_test
 
-    override fun onSoftKeyboard(isVisible: Boolean) {
-        super.onSoftKeyboard(isVisible)
-        Log("keyboard visible: $isVisible")
+    override fun onSoftKeyboard(isVisible: Boolean, keyboardHeight: Int?) {
+        super.onSoftKeyboard(isVisible, keyboardHeight)
+        Log("keyboard visible: $isVisible - height: $keyboardHeight")
     }
 
 }

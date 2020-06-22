@@ -104,6 +104,6 @@ abstract class AbstractFragment : Fragment() {
         return null
     }
 
-    open fun onSoftKeyboard(isVisible: Boolean) {}
+    open fun onSoftKeyboard(isVisible: Boolean, keyboardHeight: Int?) {}
 
 }

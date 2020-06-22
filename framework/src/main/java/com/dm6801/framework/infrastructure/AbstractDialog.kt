@@ -234,7 +234,7 @@ abstract class AbstractDialog : Dialog {
         clearInstance()
     }
 
-    open fun onSoftKeyboard(isVisible: Boolean) {}
+    open fun onSoftKeyboard(isVisible: Boolean, keyboardHeight: Int?) {}
 
     private fun clearInstance() {
         (instances as MutableMap).remove(javaClass.simpleName)?.clear()

@@ -445,32 +445,36 @@ abstract class AbstractActivity : AppCompatActivity() {
     var isKeyboardVisible: Boolean = false; private set
     val keyboardVisibility: LiveData<Boolean> = MutableLiveData()
 
-    protected open fun onSoftKeyboard(isVisible: Boolean) {
-        foregroundFragment?.onSoftKeyboard(isVisible)
-        AbstractDialog.instances.values.forEach { it?.get()?.onSoftKeyboard(isVisible) }
+    protected open fun onSoftKeyboard(isVisible: Boolean, keyboardHeight: Int?) {
+        foregroundFragment?.onSoftKeyboard(isVisible, keyboardHeight)
+        AbstractDialog.instances.values.forEach {
+            it?.get()?.onSoftKeyboard(isVisible, keyboardHeight)
+        }
     }
 
     private fun setKeyboardListener() {
         contentView?.apply {
             viewTreeObserver?.addOnGlobalLayoutListener {
-                val keyboardHeight = calculateKeyboardHeight() ?: return@addOnGlobalLayoutListener
+                val keyboardHeight = getVisibleKeyboardHeight() ?: return@addOnGlobalLayoutListener
                 val isKeyboardVisible = keyboardHeight >= KeyboardManager.estimatedHeight
                 if (this@AbstractActivity.isKeyboardVisible != isKeyboardVisible) {
                     this@AbstractActivity.isKeyboardVisible = isKeyboardVisible
                     keyboardVisibility.set(isKeyboardVisible)
-                    onSoftKeyboard(isKeyboardVisible)
+                    onSoftKeyboard(
+                        isKeyboardVisible,
+                        if (isKeyboardVisible) keyboardHeight else null
+                    )
                 }
             }
         }
     }
 
-    private fun calculateKeyboardHeight(): Int? {
+    fun getVisibleKeyboardHeight(): Int? {
         val visibleRect = Rect()
         contentView?.getWindowVisibleDisplayFrame(visibleRect) ?: return null
-        val statusBarHeight = visibleRect.top
         val screenSize = DisplayMetrics()
         windowManager.defaultDisplay.getRealMetrics(screenSize)
-        return screenSize.heightPixels - visibleRect.height() - statusBarHeight
+        return screenSize.heightPixels - visibleRect.height() - statusBarHeight - navigationBarHeight
     }
     //endregion
 

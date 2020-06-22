@@ -4,7 +4,6 @@ package com.dm6801.framework.ui
 
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
@@ -182,6 +181,13 @@ val navigationBarHeight: Int
         } catch (_: Exception) {
             0
         }
+    }
+
+val statusBarHeight: Int
+    get() {
+        val resId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        return if (resId > 0) resources.getDimensionPixelSize(resId)
+        else 0
     }
 
 fun TextView.setText(text: Any?) {
