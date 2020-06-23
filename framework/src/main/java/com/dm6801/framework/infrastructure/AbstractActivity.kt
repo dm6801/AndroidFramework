@@ -355,7 +355,7 @@ abstract class AbstractActivity : AppCompatActivity() {
                     index == -1 -> return@catch
                     index == 0 && inclusive -> finish()
                     else -> {
-                        takeArguments(index, args.toMap())
+                        takeArguments(if (inclusive) index - 1 else index, args.toMap())
                         Log("fragmentManager: popBackStack($tag, ${if (inclusive) "POP_BACK_STACK_INCLUSIVE" else "0"})")
                         popBackStack(
                             if (inclusive) FragmentManager.POP_BACK_STACK_INCLUSIVE else 0,
@@ -368,7 +368,7 @@ abstract class AbstractActivity : AppCompatActivity() {
             }
             isLastFragment -> finish()
             else -> {
-                takeArguments(backStackNames.lastIndex, args.toMap())
+                takeArguments((backStackNames.lastIndex - 1).coerceAtLeast(0), args.toMap())
                 Log("fragmentManager: popBackStack()")
                 supportFragmentManager.popBackStack()
                 hideKeyboard()
@@ -378,14 +378,14 @@ abstract class AbstractActivity : AppCompatActivity() {
     } ?: Unit
 
     private fun takeArguments(index: Int, arguments: Map<String, Any?>?) {
-        (arguments?.takeIf { it.isNotEmpty() }
-            ?.toMap() as? Map<String, Any?>)?.let { map ->
-            backStackNames.getOrNull(index - 1)?.let { previousTag ->
+        arguments?.takeIf { it.isNotEmpty() }?.toMap()?.let { map ->
+            backStackNames.getOrNull(index)?.let { previousTag ->
                 backStackArguments[previousTag] = map
             }
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     inline fun <reified T : AbstractFragment> navigateBack(
         vararg args: Pair<String, Any?>,
         inclusive: Boolean = false,
