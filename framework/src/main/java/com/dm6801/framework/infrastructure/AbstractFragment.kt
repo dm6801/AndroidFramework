@@ -26,6 +26,7 @@ abstract class AbstractFragment : Fragment() {
             vararg args: Pair<String, Any?>,
             replace: Boolean = false,
             addToBackStack: Boolean = true,
+            allowStateLoss: Boolean = true,
             hideProgressBar: Boolean = true
         ) {
             if (clazz == null || !AbstractFragment::class.java.isAssignableFrom(clazz)) return
@@ -37,6 +38,7 @@ abstract class AbstractFragment : Fragment() {
                     args.takeIf { it.isNotEmpty() }?.toMap(),
                     replace,
                     addToBackStack,
+                    allowStateLoss,
                     hideProgressBar
                 )
             } catch (e: Exception) {
@@ -59,6 +61,7 @@ abstract class AbstractFragment : Fragment() {
             foregroundActivity?.navigateBack(*args, tag = tag, inclusive = inclusive)
         }
 
+        @Suppress("UNUSED_PARAMETER")
         inline fun <reified T : AbstractFragment> navigateBack(
             vararg args: Pair<String, Any?>,
             inclusive: Boolean = false,

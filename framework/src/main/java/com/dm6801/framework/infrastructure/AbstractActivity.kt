@@ -3,6 +3,7 @@
 package com.dm6801.framework.infrastructure
 
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.MotionEvent
@@ -240,6 +241,7 @@ abstract class AbstractActivity : AppCompatActivity() {
         arguments: Map<String, Any?>? = null,
         replace: Boolean = false,
         addToBackStack: Boolean = true,
+        allowStateLoss: Boolean = true,
         hideProgressBar: Boolean = true
     ) = catch {
         when {
@@ -249,6 +251,7 @@ abstract class AbstractActivity : AppCompatActivity() {
                     fragment,
                     arguments,
                     addToBackStack = addToBackStack,
+                    allowStateLoss = allowStateLoss,
                     animate = true,
                     hideProgressBar = hideProgressBar
                 )
@@ -259,6 +262,7 @@ abstract class AbstractActivity : AppCompatActivity() {
                         fragment,
                         arguments,
                         addToBackStack = addToBackStack,
+                        allowStateLoss = allowStateLoss,
                         animate = true,
                         hideProgressBar = hideProgressBar
                     )
@@ -267,6 +271,7 @@ abstract class AbstractActivity : AppCompatActivity() {
                         fragment,
                         arguments,
                         addToBackStack = addToBackStack,
+                        allowStateLoss = allowStateLoss,
                         animate = true,
                         hideProgressBar = hideProgressBar
                     )
@@ -278,6 +283,7 @@ abstract class AbstractActivity : AppCompatActivity() {
         fragment: Fragment,
         arguments: Map<String, Any?>? = null,
         addToBackStack: Boolean = true,
+        allowStateLoss: Boolean = true,
         animate: Boolean = true,
         hideProgressBar: Boolean = true
     ) {
@@ -286,6 +292,7 @@ abstract class AbstractActivity : AppCompatActivity() {
             supportFragmentManager,
             fragment,
             addToBackStack,
+            allowStateLoss,
             animate,
             hideProgressBar
         ) {
@@ -298,6 +305,7 @@ abstract class AbstractActivity : AppCompatActivity() {
         fragment: Fragment,
         arguments: Map<String, Any?>? = null,
         addToBackStack: Boolean = true,
+        allowStateLoss: Boolean = true,
         animate: Boolean = true,
         hideProgressBar: Boolean = true
     ) {
@@ -306,6 +314,7 @@ abstract class AbstractActivity : AppCompatActivity() {
             supportFragmentManager,
             fragment,
             addToBackStack,
+            allowStateLoss,
             animate,
             hideProgressBar
         ) {
@@ -319,11 +328,12 @@ abstract class AbstractActivity : AppCompatActivity() {
         fragmentManager: FragmentManager,
         fragment: Fragment,
         addToBackStack: Boolean,
+        allowStateLoss: Boolean,
         animate: Boolean,
         hideProgressBar: Boolean,
         action: FragmentTransaction.(Fragment) -> Unit
     ) = catch {
-        fragmentManager.commit {
+        fragmentManager.commit(allowStateLoss = allowStateLoss) {
             if (animate) setCustomAnimations(
                 R.anim.fragment_fade_enter,
                 R.anim.fragment_fade_exit,
@@ -469,11 +479,16 @@ abstract class AbstractActivity : AppCompatActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
     fun getVisibleKeyboardHeight(): Int? {
         val visibleRect = Rect()
         contentView?.getWindowVisibleDisplayFrame(visibleRect) ?: return null
         val screenSize = DisplayMetrics()
-        windowManager.defaultDisplay.getRealMetrics(screenSize)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            display?.getRealMetrics(screenSize)
+                ?: windowManager.defaultDisplay.getRealMetrics(screenSize)
+        else
+            windowManager.defaultDisplay.getRealMetrics(screenSize)
         return screenSize.heightPixels - visibleRect.height() - statusBarHeight - navigationBarHeight
     }
     //endregion
