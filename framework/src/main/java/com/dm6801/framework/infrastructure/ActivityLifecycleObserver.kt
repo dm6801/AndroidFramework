@@ -102,7 +102,7 @@ object ActivityLifecycleObserver : Application.ActivityLifecycleCallbacks {
         val currentActivityLifecycle = foregroundActivity?.lifecycle?.currentState?.ordinal ?: -1
         val targetActivityLifeCycle = activity.lifecycle.currentState.ordinal
 
-        if (targetActivityLifeCycle > currentActivityLifecycle) _foregroundActivity = _activities[activity.tag]
+        if (targetActivityLifeCycle >= currentActivityLifecycle) _foregroundActivity = _activities[activity.tag]
         (foregroundActivityLive as MutableLiveData).value = activity
     }
 

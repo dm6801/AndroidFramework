@@ -30,7 +30,7 @@ abstract class AbstractDialog : Dialog {
 
         fun closeAll() {
             instances.values.forEach { instance ->
-                instance?.get()?.apply {
+                instance?.get()?.takeIf { it.closeWithActivity }?.run {
                     cancel()
                     clearInstance()
                 }
@@ -114,6 +114,7 @@ abstract class AbstractDialog : Dialog {
     protected open val heightFactor: Float? = null
     protected open val gravity: Int = Gravity.CENTER
     protected open val isBackgroundDim: Boolean = false
+    protected open val closeWithActivity: Boolean = true
     private var wasCanceled: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
